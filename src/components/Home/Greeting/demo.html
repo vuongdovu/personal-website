@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Typing Text Animation</title>
+    <style>
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: #f5f5f5;
+        }
+
+        .container {
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 32px;
+            margin: 0 0 16px 0;
+            font-family: Arial, Helvetica, sans-serif;
+            font-weight: bold;
+        }
+
+        .row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .row-text {
+            font-family: Arial, Helvetica, sans-serif;
+            font-weight: normal;
+        }
+
+        .typing-text {
+            font-family: Arial, Helvetica, sans-serif;
+            font-weight: normal;
+            font-size: 24px;
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 3px;
+            height: 24px;
+            background: #667eea;
+            margin-left: 2px;
+            animation: blink 1s step-end infinite;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Hi my name is Vuong 👋</h1>
+        <div class="row">
+            <span class="row-text">I'm interested in</span>
+            <span class="typing-text">
+                <span id="text"></span>
+                <span class="cursor"></span>
+            </span>
+        </div>
+    </div>
+
+    <script>
+        const words = ["volleyball", "web dev", "weightlifting", "eating", "agentic AI", "gaming"];
+        let currentIdx = 0;
+        let displayedText = '';
+        let phase = 'typing';
+        
+        const textEl = document.getElementById('text');
+        const typeSpeed = 80;
+        const deleteSpeed = 40;
+        const pauseDuration = 1500;
+
+        function tick() {
+            if (phase === 'typing') {
+                if (displayedText.length < words[currentIdx].length) {
+                    displayedText = words[currentIdx].slice(0, displayedText.length + 1);
+                    textEl.textContent = displayedText;
+                    setTimeout(tick, typeSpeed);
+                } else {
+                    setTimeout(() => {
+                        phase = 'pausing';
+                        tick();
+                    }, pauseDuration);
+                }
+            } else if (phase === 'pausing') {
+                phase = 'deleting';
+                setTimeout(tick, 100);
+            } else if (phase === 'deleting') {
+                if (displayedText.length > 0) {
+                    displayedText = displayedText.slice(0, -1);
+                    textEl.textContent = displayedText;
+                    setTimeout(tick, deleteSpeed);
+                } else {
+                    currentIdx = (currentIdx + 1) % words.length;
+                    phase = 'typing';
+                    setTimeout(tick, 500);
+                }
+            }
+        }
+
+        setTimeout(tick, 500);
+    </script>
+</body>
+</html>

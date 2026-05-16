@@ -42,3 +42,19 @@ next-env.d.ts
 
 # pi
 personal-website-pi
+
+# SSL / Certbot
+certbot/
+letsencrypt/
+ssl/
+*.pem
+*.key
+*.crt
+*.csr
+fullchain.pem
+privkey.pem
+chain.pem
+cert.pem
+
+# Certbot webroot challenge files
+.well-known/acme-challenge/

@@ -18,10 +18,10 @@ export function Greeting() {
         }}>
             <div>
                 <h1 style={{ fontSize: '2rem', margin: '0 0 1rem 0', fontFamily: 'Arial, sans-serif' }}>Hi my name is Vuong 👋</h1>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', fontSize: '1.5rem' }}>
+                {/* <div style={{ display: 'flex', gap: '8px', alignItems: 'center', fontSize: '1.5rem' }}>
                     <span style={{ fontFamily: 'Arial, sans-serif', fontWeight: 'normal' }}>I&apos;m interested in </span> 
                     <RotatingText />
-                </div>
+                </div> */}
             </div>
             <Socials size="lg" variant="default" direction="row" gap={16} />
         </div>

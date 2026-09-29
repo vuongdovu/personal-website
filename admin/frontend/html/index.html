@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>archive upload</title>
+    </head>
+    <body>
+        <form action="/s3-upload" method="POST" enctype="multipart/form-data">
+            <!--Photo File input-->
+            <label for="photo-upload">Choose a photo:</label>
+            <input type="file" id="photo-upload" name="photo" accept="image/*">
+            <!--Title input-->
+            <div>
+                <label for="title">Name:</label>
+                <input type="text" id="title" name="title" required placeholder="title">
+            </div>
+            <!--Caption input-->
+            <div>
+                <label for="caption">Name:</label>
+                <input type="text" id="caption" name="caption" required placeholder="caption">
+            </div>
+
+            <button type="submit">Upload Photo</button>
+        </form>
+    </body>
+</html>

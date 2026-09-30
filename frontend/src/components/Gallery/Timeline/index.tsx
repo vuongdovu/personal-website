@@ -124,7 +124,7 @@ export function Timeline({ photos }: TimelineProps) {
                 aria-atomic="true"
             >
                 <span className={styles.dateTick} aria-hidden="true" />
-                <DateCard date={activePhoto.created_at} />
+                <DateCard date={activePhoto.taken_on ?? activePhoto.created_at} />
             </aside>
         </div>
     )
@@ -138,6 +138,7 @@ function DateCard({ date }: { date: Date | string }) {
             month: 'short',
             day: 'numeric',
             year: 'numeric',
+            timeZone: 'UTC',
         }).format(parsedDate)
 
     return <time className={styles.dateCard}>{formattedDate}</time>

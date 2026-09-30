@@ -4,6 +4,7 @@ export type PhotoResponse = {
     caption: string
     updated_at: Date
     created_at: Date
-    tags: [string]
+    taken_on: string | null
+    tags: string[]
     s3Url: string
 }

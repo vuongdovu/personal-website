@@ -1,14 +1,31 @@
 services:
   next-app:
+    profiles:
+      - production
     build:
       context: ./frontend
-      dockerfile: Dockerfile
+      dockerfile: ../Dockerfile
     container_name: next-app
     restart: unless-stopped
     expose:
       - "3000"
+    environment:
+      DB_HOST: db
+      DB_USER: postgres
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      DB_NAME: postgres
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio.tail877c9f.ts.net}
+      MINIO_SECURE: ${MINIO_SECURE:-true}
+      MINIO_BUCKET: ${MINIO_BUCKET:-photos}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:?Set MINIO_ACCESS_KEY in .env}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:?Set MINIO_SECRET_KEY in .env}
+    depends_on:
+      db:
+        condition: service_healthy
 
   nginx:
+    profiles:
+      - production
     image: nginx:alpine
     container_name: nginx
     restart: unless-stopped
@@ -23,15 +40,49 @@ services:
       - next-app
 
   db:
-    image: postgres:16-alpine
+    build:
+      context: ./db
     container_name: gallery-meta-data-db
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: postgres
+    ports:
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  admin:
+    profiles:
+      - admin
+    build:
+      context: ./admin
+    container_name: gallery-admin
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8001:8000"
+    environment:
+      DB_HOST: db
+      DB_USER: postgres
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      DB_NAME: postgres
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio.tail877c9f.ts.net}
+      MINIO_SECURE: ${MINIO_SECURE:-true}
+      MINIO_BUCKET: ${MINIO_BUCKET:-photos}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:?Set MINIO_ACCESS_KEY in .env}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:?Set MINIO_SECRET_KEY in .env}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # admin-tailscale:
+
 
 volumes:
   postgres_data:

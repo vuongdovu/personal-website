@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
+import path from "node:path";
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: ["minio"],
+  turbopack: {
+    root: path.resolve(import.meta.dirname),
+  },
 
   // images: {
   //   remotePatterns: [
@@ -20,6 +25,7 @@ const nextConfig: NextConfig = {
   // },
 
   images: {
+    minimumCacheTTL: 0,
     remotePatterns: [
       {
         protocol: "https",

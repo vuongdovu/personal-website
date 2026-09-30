@@ -1,74 +1,63 @@
+import Link from 'next/link'
+import { Suspense } from 'react'
 import { Timeline } from '@/components/Gallery/Timeline'
-import type { PhotoResponse } from '@/lib/ApiTypes'
+import { createMinioClient } from '@/lib/db'
+import { getPhotoPage, PAGE_SIZE } from '@/lib/photos'
 
-const PHOTO_URL = 'https://vuongdovu-376129857525-us-east-2-an.s3.us-east-2.amazonaws.com/media/photos/IMG_1307.JPG'
+async function MinioStatus() {
+    let message: string
 
-const photos: PhotoResponse[] = [
-    {
-        id: 'mock-photo-1',
-        title: 'Summer afternoon',
-        caption: 'Timeline test photo one',
-        created_at: new Date('2026-07-21T12:00:00Z'),
-        updated_at: new Date('2026-07-21T12:00:00Z'),
-        tags: ['mock'],
-        s3Url: PHOTO_URL,
-    },
-    {
-        id: 'mock-photo-2',
-        title: 'Spring memory',
-        caption: 'Timeline test photo two',
-        created_at: new Date('2026-04-12T12:00:00Z'),
-        updated_at: new Date('2026-04-12T12:00:00Z'),
-        tags: ['mock'],
-        s3Url: PHOTO_URL,
-    },
-    {
-        id: 'mock-photo-3',
-        title: 'Winter light',
-        caption: 'Timeline test photo three',
-        created_at: new Date('2026-01-05T12:00:00Z'),
-        updated_at: new Date('2026-01-05T12:00:00Z'),
-        tags: ['mock'],
-        s3Url: PHOTO_URL,
-    },
-    {
-        id: 'mock-photo-4',
-        title: 'Autumn walk',
-        caption: 'Timeline test photo four',
-        created_at: new Date('2025-10-18T12:00:00Z'),
-        updated_at: new Date('2025-10-18T12:00:00Z'),
-        tags: ['mock'],
-        s3Url: PHOTO_URL,
-    },
-    {
-        id: 'mock-photo-5',
-        title: 'Late summer',
-        caption: 'Timeline test photo five',
-        created_at: new Date('2025-08-02T12:00:00Z'),
-        updated_at: new Date('2025-08-02T12:00:00Z'),
-        tags: ['mock'],
-        s3Url: PHOTO_URL,
-    },
-    {
-        id: 'mock-photo-6',
-        title: 'Early spring',
-        caption: 'Timeline test photo six',
-        created_at: new Date('2025-03-16T12:00:00Z'),
-        updated_at: new Date('2025-03-16T12:00:00Z'),
-        tags: ['mock'],
-        s3Url: PHOTO_URL,
-    },
-    {
-        id: 'mock-photo-7',
-        title: 'New year',
-        caption: 'Timeline test photo seven',
-        created_at: new Date('2025-01-01T12:00:00Z'),
-        updated_at: new Date('2025-01-01T12:00:00Z'),
-        tags: ['mock'],
-        s3Url: PHOTO_URL,
-    },
-]
+    try {
+        const buckets = await createMinioClient().listBuckets()
+        message = `MinIO connected. ${buckets.length} ${buckets.length === 1 ? 'bucket' : 'buckets'} visible.`
+    } catch (error) {
+        const reason = error instanceof Error ? error.message : String(error)
+        message = `MinIO check failed: ${reason}`
+    }
 
-export default function Gallery() {
-    return <Timeline photos={photos} />
+    return <p role="status">{message}</p>
+}
+
+export default async function Gallery({
+    searchParams,
+}: {
+    searchParams: Promise<{ page?: string | string[] }>
+}) {
+    const rawPage = (await searchParams).page
+    const parsedPage = typeof rawPage === 'string' ? Number(rawPage) : 1
+    const requestedPage = Number.isSafeInteger(parsedPage) && parsedPage > 0 ? parsedPage : 1
+    const { photos, total, currentPage, pageCount } = await getPhotoPage(requestedPage)
+
+    return (
+        <>
+            {process.env.NODE_ENV === 'development' && (
+                <div className="mx-auto max-w-5xl px-4 py-3 text-sm">
+                    <Suspense fallback={<p role="status">Checking MinIO connection…</p>}>
+                        <MinioStatus />
+                    </Suspense>
+                </div>
+            )}
+            {photos.length > 0 ? (
+                <Timeline key={currentPage} photos={photos} />
+            ) : (
+                <p className="mx-auto max-w-5xl px-4 py-12">No photos are in the bucket yet.</p>
+            )}
+            {total > 0 && (
+                <nav aria-label="Archive pages" className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-8">
+                    <div>
+                        <p>Page {currentPage} of {pageCount}</p>
+                        <p>{total} {total === 1 ? 'photo' : 'photos'} · {PAGE_SIZE} per page</p>
+                    </div>
+                    <div className="flex gap-4">
+                        {currentPage > 1 && (
+                            <Link href={`/archive?page=${currentPage - 1}`}>Previous</Link>
+                        )}
+                        {currentPage < pageCount && (
+                            <Link href={`/archive?page=${currentPage + 1}`}>Next</Link>
+                        )}
+                    </div>
+                </nav>
+            )}
+        </>
+    )
 }

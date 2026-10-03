@@ -1,3 +1,4 @@
+import io
 import logging
 import os
 import uuid
@@ -98,7 +99,7 @@ def process_and_convert_heic(photo) -> tuple[bool, int]:
                 return True, byte_size
                 
         except Exception as e:
-            # Log the error safely if you have a logger initialized
+            logger.exception("Failed to process HEIC image")
             raise HTTPException(status_code=422, detail="Failed to process HEIC image") from e
 
     # If it wasn't a HEIC file, get the original file size safely

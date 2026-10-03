@@ -40,3 +40,7 @@ The admin app in `admin/` uploads JPEG, PNG, or WebP files (up to 20 MB) to MinI
 7. Open the HTTPS URL reported by `tailscale serve status` from a device in your tailnet. Use Tailscale Serve only; do not enable Funnel for the admin.
 
 The named `admin_tailscale_state` volume preserves the node identity across container rebuilds. Do not remove that volume unless you intend to register a new Tailnet node. The admin must be able to resolve and connect to both `DB_HOST` and `MINIO_ENDPOINT`; check those from inside `gallery-admin` if listing or uploads fail.
+
+
+to update registry image:
+docker compose build --no-cache --push next-app

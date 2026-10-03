@@ -1,11 +1,13 @@
 services:
   next-app:
+    image: registry.tail877c9f.ts.net/vuongdovu-site:latest
     profiles:
       - production
     build:
       context: ./frontend
       dockerfile: ../Dockerfile
-    image: registry.tail877c9f.ts.net/vuongdovu-site:latest
+      platforms:
+        - linux/amd64
     container_name: next-app
     restart: unless-stopped
     expose:

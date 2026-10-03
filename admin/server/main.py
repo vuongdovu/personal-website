@@ -12,10 +12,10 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from minio import Minio
-from PIL import Image, UnidentifiedImageError
+from PIL import Image, UnidentifiedImageError, JpegImagePlugin
+from pillow_heif import register_heif_opener
 
 from models import Photo, SessionLocal
-
 
 logger = logging.getLogger(__name__)
 app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
@@ -33,6 +33,8 @@ IMAGE_MIME_TYPES = {
     ".webp": "image/webp", ".gif": "image/gif", ".avif": "image/avif",
 }
 
+JpegImagePlugin._getmp = lambda x: None
+register_heif_opener()
 
 @lru_cache
 def minio_client() -> Minio:
@@ -61,6 +63,49 @@ async def limit_request_size(request: Request, call_next):
     response = await call_next(request)
     response.headers["X-Archive-Admin"] = "1"
     return response
+
+def process_and_convert_heic(photo) -> tuple[bool, int]:
+    """
+    Checks if an uploaded photo is a HEIC file. If so, converts it to JPEG in-memory.
+    Returns a tuple: (was_converted: bool, correct_byte_size: int)
+    """
+    filename = getattr(photo, "filename", "").lower()
+    
+    if filename.endswith(".heic") or filename.endswith(".heif"):
+        try:
+            # Ensure we read from the beginning of the uploaded stream
+            photo.file.seek(0)
+            
+            with Image.open(photo.file) as heic_image:
+                if heic_image.mode != "RGB":
+                    heic_image = heic_image.convert("RGB")
+                
+                converted_buffer = io.BytesIO()
+                # Save into buffer; 90 quality matches your target balance
+                heic_image.save(converted_buffer, format="JPEG", quality=90)
+                
+                # Get the size of the newly generated JPEG file
+                byte_size = converted_buffer.tell()
+                
+                # Rewind and swap out the file reference
+                converted_buffer.seek(0)
+                photo.file = converted_buffer
+                
+                # Update filename extension safely
+                if hasattr(photo, "filename") and photo.filename:
+                    photo.filename = f"{photo.filename.rsplit('.', 1)[0]}.jpg"
+                
+                return True, byte_size
+                
+        except Exception as e:
+            # Log the error safely if you have a logger initialized
+            raise HTTPException(status_code=422, detail="Failed to process HEIC image") from e
+
+    # If it wasn't a HEIC file, get the original file size safely
+    photo.file.seek(0, os.SEEK_END)
+    byte_size = photo.file.tell()
+    photo.file.seek(0)
+    return False, byte_size
 
 
 @app.get("/", include_in_schema=False)
@@ -174,9 +219,8 @@ def upload_photo(
     if len(parsed_tags) > 20 or any(len(tag) > 50 for tag in parsed_tags):
         raise HTTPException(status_code=422, detail="Use at most 20 tags of 50 characters each")
 
-    photo.file.seek(0, os.SEEK_END)
-    byte_size = photo.file.tell()
-    photo.file.seek(0)
+    was_converted, byte_size = process_and_convert_heic(photo)
+    
     if byte_size == 0 or byte_size > MAX_FILE_BYTES:
         raise HTTPException(status_code=413, detail="Image must be between 1 byte and 20 MB")
     try:
@@ -186,6 +230,7 @@ def upload_photo(
     except (UnidentifiedImageError, OSError, ValueError, Image.DecompressionBombError):
         raise HTTPException(status_code=422, detail="Invalid image") from None
     if image_format not in IMAGE_FORMATS:
+        print(image_format)
         raise HTTPException(status_code=422, detail="Use a JPEG, PNG, or WebP image")
     photo.file.seek(0)
 

@@ -10,18 +10,15 @@ services:
     expose:
       - "3000"
     environment:
-      DB_HOST: db
-      DB_USER: postgres
-      DB_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
-      DB_NAME: postgres
-      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio.tail877c9f.ts.net}
+      DB_HOST: ${DB_HOST:?Set DB_HOST in .env}
+      DB_USER: ${DB_USER:?Set DB_USER in .env}
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      DB_NAME: ${DB_NAME:?Set DB_NAME in .env}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio.tail877c9f.ts.net:8443}
       MINIO_SECURE: ${MINIO_SECURE:-true}
-      MINIO_BUCKET: ${MINIO_BUCKET:-photos}
+      MINIO_BUCKET: ${MINIO_BUCKET:-archive-imgs}
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:?Set MINIO_ACCESS_KEY in .env}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:?Set MINIO_SECRET_KEY in .env}
-    depends_on:
-      db:
-        condition: service_healthy
 
   nginx:
     profiles:
@@ -39,24 +36,24 @@ services:
     depends_on:
       - next-app
 
-  db:
-    build:
-      context: ./db
-    container_name: gallery-meta-data-db
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
-      POSTGRES_DB: postgres
-    ports:
-      - "127.0.0.1:5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
+  # db:
+  #   build:
+  #     context: ./db
+  #   container_name: gallery-meta-data-db
+  #   restart: unless-stopped
+  #   environment:
+  #     POSTGRES_USER: postgres
+  #     POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+  #     POSTGRES_DB: postgres
+  #   ports:
+  #     - "127.0.0.1:5432:5432"
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+  #     interval: 5s
+  #     timeout: 3s
+  #     retries: 10
 
   admin:
     profiles:
@@ -65,24 +62,54 @@ services:
       context: ./admin
     container_name: gallery-admin
     restart: unless-stopped
-    ports:
-      - "127.0.0.1:8001:8000"
+    network_mode: "service:admin-tailscale"
+    depends_on:
+      admin-tailscale:
+        condition: service_healthy
     environment:
-      DB_HOST: db
-      DB_USER: postgres
-      DB_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
-      DB_NAME: postgres
-      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio.tail877c9f.ts.net}
+      DB_HOST: ${DB_HOST:?Set DB_HOST in .env}
+      DB_USER: ${DB_USER:?Set DB_USER in .env}
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      DB_NAME: ${DB_NAME:?Set DB_NAME in .env}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio.tail877c9f.ts.net:8443}
       MINIO_SECURE: ${MINIO_SECURE:-true}
-      MINIO_BUCKET: ${MINIO_BUCKET:-photos}
+      MINIO_BUCKET: ${MINIO_BUCKET:-archive-imgs}
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:?Set MINIO_ACCESS_KEY in .env}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:?Set MINIO_SECRET_KEY in .env}
-    depends_on:
-      db:
-        condition: service_healthy
 
-  # admin-tailscale:
+  admin-tailscale:
+    profiles:
+      - admin
+    container_name: vuongdovu.com-admin-ts
+    hostname: archive-admin
+    image: tailscale/tailscale:v1.102.5
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    volumes:
+      - admin_tailscale_state:/var/lib/tailscale
+      - ./admin/tailscale/config:/config:ro
+    environment:
+      TS_HOSTNAME: archive-admin
+      TS_STATE_DIR: /var/lib/tailscale
+      TS_SERVE_CONFIG: /config/service.json
+      TS_AUTHKEY: ${TS_AUTH_KEY:?Set a fresh TS_AUTH_KEY in .env}
+      TS_AUTH_ONCE: "true"
+      TS_USERSPACE: "false"
+      TS_ACCEPT_DNS: "true"
+      TS_ENABLE_HEALTH_CHECK: "true"
+      TS_LOCAL_ADDR_PORT: 127.0.0.1:9002
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:9002/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+    restart: unless-stopped
 
 
 volumes:
   postgres_data:
+  admin_tailscale_state:

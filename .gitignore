@@ -61,3 +61,6 @@ cert.pem
 
 # Certbot webroot challenge files
 .well-known/acme-challenge/
+
+# Tailscale node identity and logs are secrets; the Serve config is safe to track.
+/admin/tailscale/ts-state/

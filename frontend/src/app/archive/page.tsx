@@ -2,7 +2,8 @@ import Link from 'next/link'
 import { Suspense } from 'react'
 import { Timeline } from '@/components/Gallery/Timeline'
 import { createMinioClient } from '@/lib/db'
-import { getPhotoPage, PAGE_SIZE } from '@/lib/photos'
+import { getPhotoPage } from '@/lib/photos'
+import styles from './Archive.module.css'
 
 async function MinioStatus() {
     let message: string
@@ -26,7 +27,7 @@ export default async function Gallery({
     const rawPage = (await searchParams).page
     const parsedPage = typeof rawPage === 'string' ? Number(rawPage) : 1
     const requestedPage = Number.isSafeInteger(parsedPage) && parsedPage > 0 ? parsedPage : 1
-    const { photos, total, currentPage, pageCount } = await getPhotoPage(requestedPage)
+    const { photos, currentPage, pageCount } = await getPhotoPage(requestedPage)
 
     return (
         <>
@@ -42,20 +43,20 @@ export default async function Gallery({
             ) : (
                 <p className="mx-auto max-w-5xl px-4 py-12">No photos are in the bucket yet.</p>
             )}
-            {total > 0 && (
-                <nav aria-label="Archive pages" className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-8">
-                    <div>
-                        <p>Page {currentPage} of {pageCount}</p>
-                        <p>{total} {total === 1 ? 'photo' : 'photos'} · {PAGE_SIZE} per page</p>
-                    </div>
-                    <div className="flex gap-4">
-                        {currentPage > 1 && (
-                            <Link href={`/archive?page=${currentPage - 1}`}>Previous</Link>
-                        )}
-                        {currentPage < pageCount && (
-                            <Link href={`/archive?page=${currentPage + 1}`}>Next</Link>
-                        )}
-                    </div>
+            {pageCount > 1 && (
+                <nav aria-label="Archive pages" className={styles.pagination}>
+                    {currentPage > 1 && (
+                        <Link className={styles.pageButton} href={`/archive?page=${currentPage - 1}`} rel="prev">
+                            <span aria-hidden="true">←</span>
+                            Previous
+                        </Link>
+                    )}
+                    {currentPage < pageCount && (
+                        <Link className={styles.pageButton} href={`/archive?page=${currentPage + 1}`} rel="next">
+                            Next
+                            <span aria-hidden="true">→</span>
+                        </Link>
+                    )}
                 </nav>
             )}
         </>

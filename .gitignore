@@ -64,3 +64,5 @@ cert.pem
 
 # Tailscale node identity and logs are secrets; the Serve config is safe to track.
 /admin/tailscale/ts-state/
+
+venv

@@ -74,6 +74,8 @@ services:
       DB_USER: ${DB_USER:?Set DB_USER in .env}
       DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
       DB_NAME: ${DB_NAME:?Set DB_NAME in .env}
+      EMBEDDING_URL: ${EMBEDDING_URL:-https://qwen-embedding-4b.tail877c9f.ts.net/v1/embeddings}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-Qwen/Qwen3-4B}
       MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio.tail877c9f.ts.net:8443}
       MINIO_SECURE: ${MINIO_SECURE:-true}
       MINIO_BUCKET: ${MINIO_BUCKET:-archive-imgs}

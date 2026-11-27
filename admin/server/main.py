@@ -236,6 +236,14 @@ async def upload_photo(
         raise HTTPException(status_code=422, detail="Use a JPEG, PNG, or WebP image")
     photo.file.seek(0)
 
+    caption_embedding = None
+    if caption:
+        try:
+            caption_embedding = embed_query(caption)
+        except Exception:
+            logger.exception("Could not generate caption embedding")
+            raise HTTPException(status_code=502, detail="Could not generate caption embedding") from None
+
     extension, content_type = IMAGE_FORMATS[image_format]
     photo_id = uuid.uuid4()
     object_key = f"photos/{photo_id}.{extension}"
@@ -259,7 +267,7 @@ async def upload_photo(
                 object_key=object_key,
                 content_type=content_type,
                 byte_size=byte_size,
-                caption_embedding=embed_query(caption)
+                caption_embedding=caption_embedding,
             ))
     except Exception:
         logger.exception("Could not save metadata for %s", object_key)

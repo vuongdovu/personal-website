@@ -39,6 +39,8 @@ The admin app in `admin/` uploads JPEG, PNG, or WebP files (up to 20 MB) to MinI
 
 7. Open the HTTPS URL reported by `tailscale serve status` from a device in your tailnet. Use Tailscale Serve only; do not enable Funnel for the admin.
 
+Set `EMBEDDING_URL` and `EMBEDDING_MODEL` to your embedding service in `.env`. Nonempty captions are embedded during upload; the service must return a 2560-dimensional vector, and the Postgres `photos.caption_embedding` column must be `vector(2560)` with the pgvector extension installed. Uploads fail if the embedding cannot be generated. Empty captions are stored without a vector. Rebuild the admin service after changing its configuration.
+
 The named `admin_tailscale_state` volume preserves the node identity across container rebuilds. Do not remove that volume unless you intend to register a new Tailnet node. The admin must be able to resolve and connect to both `DB_HOST` and `MINIO_ENDPOINT`; check those from inside `gallery-admin` if listing or uploads fail.
 
 # How I use my own compute securely in the cloud

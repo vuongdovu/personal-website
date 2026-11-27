@@ -41,6 +41,9 @@ The admin app in `admin/` uploads JPEG, PNG, or WebP files (up to 20 MB) to MinI
 
 The named `admin_tailscale_state` volume preserves the node identity across container rebuilds. Do not remove that volume unless you intend to register a new Tailnet node. The admin must be able to resolve and connect to both `DB_HOST` and `MINIO_ENDPOINT`; check those from inside `gallery-admin` if listing or uploads fail.
 
+# How I use my own compute securely in the cloud
+
+I do all of my networking through tailscale. This allows 
 
 to update registry image:
 docker compose build --no-cache --push next-app

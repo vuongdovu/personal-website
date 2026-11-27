@@ -17,6 +17,7 @@ from PIL import Image, UnidentifiedImageError, JpegImagePlugin
 from pillow_heif import register_heif_opener
 
 from models import Photo, SessionLocal
+from utils.embeddings import embed_query
 
 logger = logging.getLogger(__name__)
 app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
@@ -200,7 +201,7 @@ def preview_photo(object_key: str):
 
 
 @app.post("/upload")
-def upload_photo(
+async def upload_photo(
     request: Request,
     photo: UploadFile = File(...),
     title: str = Form(...),
@@ -258,6 +259,7 @@ def upload_photo(
                 object_key=object_key,
                 content_type=content_type,
                 byte_size=byte_size,
+                caption_embedding=embed_query(caption)
             ))
     except Exception:
         logger.exception("Could not save metadata for %s", object_key)

@@ -6,6 +6,7 @@ from sqlalchemy import BigInteger, Date, DateTime, String, Text, create_engine, 
 from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from sqlalchemy.engine import URL
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
+from pgvector.sqlalchemy import VECTOR
 
 
 class Base(DeclarativeBase):
@@ -25,7 +26,9 @@ class Photo(Base):
     byte_size: Mapped[int] = mapped_column(BigInteger, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-
+    caption_embedding: Mapped[list[float] | None] = mapped_column(
+        VECTOR(2560), nullable=True
+    )
 
 database_url = URL.create(
     "postgresql+psycopg",
